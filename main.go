@@ -1,7 +1,9 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -14,7 +16,35 @@ const (
 	userID = "whoishiring"
 )
 
+type Config struct {
+	baseDir string
+}
+
+func getConfig() (*Config, error) {
+	config := &Config{}
+
+	flag.StringVar(&config.baseDir, "commentDir", "comment", "Directory to store comments")
+	flag.Parse()
+
+	// Sanity check on parameters
+	stat, err := os.Stat(config.baseDir)
+	if err != nil {
+		return nil, err
+	}
+	if !stat.IsDir() {
+		return nil, fmt.Errorf("not a directory: %s", config.baseDir)
+	}
+
+	return config, nil
+}
+
 func main() {
+
+	config, err := getConfig()
+	if err != nil {
+		fmt.Printf("unable to get a valid config: %v\n", err)
+		return
+	}
 
 	user, err := hn.GetUser(userID)
 	if err != nil {
@@ -36,7 +66,7 @@ func main() {
 	}
 
 	fmt.Printf("Post[%s] has %d comments\n", post.Title, len(post.BaseCommentIDs))
-	getAndSaveComments(post.BaseCommentIDs)
+	getAndSaveComments(config, post.BaseCommentIDs)
 }
 
 // titleMatch checks if we have the
@@ -58,11 +88,10 @@ func titleMatch(title string) bool {
 	return strings.Contains(title, subsTitle)
 }
 
-func getAndSaveComments(commentIDs []int) {
+func getAndSaveComments(config *Config, commentIDs []int) {
 	var wg sync.WaitGroup
 	wg.Add(len(commentIDs))
 
-	// TODO: Check if basedir is present or not
 	for _, commentID := range commentIDs {
 		go func(id int, w *sync.WaitGroup) {
 			defer w.Done()
@@ -73,8 +102,7 @@ func getAndSaveComments(commentIDs []int) {
 				return
 			}
 
-			basedir := "comment/"
-			err = comment.Save(basedir)
+			err = comment.Save(config.baseDir)
 			if err != nil {
 				fmt.Printf("Error in saving comment[%d]: %v\n", id, err)
 			}

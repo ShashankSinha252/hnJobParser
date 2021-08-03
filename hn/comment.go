@@ -96,6 +96,13 @@ func GetComment(commentID int) (*Comment, error) {
 }
 
 func (c *Comment) Save(basedir string) error {
+	if len(basedir) == 0 {
+		return fmt.Errorf("no basedir provided")
+	}
+
+	if basedir[len(basedir)-1] != '/' {
+		basedir += "/"
+	}
 	fileID := basedir + strconv.Itoa(c.ID)
 
 	file, err := os.Create(fileID)
