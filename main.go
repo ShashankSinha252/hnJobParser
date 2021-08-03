@@ -10,9 +10,12 @@ import (
 	"github.com/deadmangareader/hnJobParser/hn"
 )
 
+const (
+	userID = "whoishiring"
+)
+
 func main() {
 
-	userID := "whoishiring"
 	user, err := hn.GetUser(userID)
 	if err != nil {
 		fmt.Printf("unable to get user[%s]: %v\n", userID, err)
@@ -33,25 +36,7 @@ func main() {
 	}
 
 	fmt.Printf("Post[%s] has %d comments\n", post.Title, len(post.BaseCommentIDs))
-
-	var wg sync.WaitGroup
-	for _, commentID := range post.BaseCommentIDs {
-		wg.Add(1)
-		go func(id int, w *sync.WaitGroup) {
-			defer w.Done()
-			comment, err := hn.GetComment(id)
-			if err != nil {
-				fmt.Printf("Invalid comment[%d]: %v\n", id, err)
-				return
-			}
-			err = comment.Save()
-			if err != nil {
-				fmt.Printf("Error in saving comment[%d]: %v\n", id, err)
-			}
-		}(commentID, &wg)
-	}
-
-	wg.Wait()
+	getAndSaveComments(post.BaseCommentIDs)
 }
 
 // titleMatch checks if we have the
@@ -71,4 +56,31 @@ func titleMatch(title string) bool {
 
 	subsTitle := "hiring"
 	return strings.Contains(title, subsTitle)
+}
+
+func getAndSaveComments(commentIDs []int) {
+	var wg sync.WaitGroup
+	wg.Add(len(commentIDs))
+
+	// TODO: Check if basedir is present or not
+	for _, commentID := range commentIDs {
+		go func(id int, w *sync.WaitGroup) {
+			defer w.Done()
+
+			comment, err := hn.GetComment(id)
+			if err != nil {
+				fmt.Printf("Invalid comment[%d]: %v\n", id, err)
+				return
+			}
+
+			basedir := "comment/"
+			err = comment.Save(basedir)
+			if err != nil {
+				fmt.Printf("Error in saving comment[%d]: %v\n", id, err)
+			}
+		}(commentID, &wg)
+	}
+
+	wg.Wait()
+
 }
