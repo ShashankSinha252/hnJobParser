@@ -12,6 +12,7 @@ type Comment struct {
 	ID      int    `json:"id"`
 	Content string `json:"text"`
 	Poster  string `json:"by"`
+	Deleted bool   `json:"deleted"`
 }
 
 type Post struct {
@@ -96,6 +97,10 @@ func GetComment(commentID int) (*Comment, error) {
 }
 
 func (c *Comment) Save(basedir string) error {
+	if c.Deleted {
+		return fmt.Errorf("deleted comment")
+	}
+
 	if len(basedir) == 0 {
 		return fmt.Errorf("no basedir provided")
 	}
@@ -103,7 +108,7 @@ func (c *Comment) Save(basedir string) error {
 	if basedir[len(basedir)-1] != '/' {
 		basedir += "/"
 	}
-	fileID := basedir + strconv.Itoa(c.ID)
+	fileID := basedir + "commment-" + strconv.Itoa(c.ID)
 
 	file, err := os.Create(fileID)
 	if err != nil {
