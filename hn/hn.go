@@ -111,7 +111,7 @@ func (c *Comment) Save(basedir string) error {
 	if basedir[len(basedir)-1] != '/' {
 		basedir += "/"
 	}
-	fileID := basedir + "commment-" + strconv.Itoa(c.ID)
+	fileID := basedir + "comment-" + strconv.Itoa(c.ID)
 
 	file, err := os.Create(fileID)
 	if err != nil {
