@@ -93,10 +93,13 @@ func GetComment(commentID int) (*Comment, error) {
 	}
 
 	return comment, nil
-
 }
 
 func (c *Comment) Save(basedir string) error {
+	if c.ID == 0 {
+		return nil
+	}
+
 	if c.Deleted {
 		return fmt.Errorf("deleted comment")
 	}
